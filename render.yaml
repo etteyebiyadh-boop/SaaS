@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: whatsapp-ai-autoreply-saas
+    runtime: node
+    plan: starter
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_PATH
+        value: /var/data/app.db
+      - key: SESSION_DB_PATH
+        value: /var/data/sessions.db
+      - key: WHATSAPP_GRAPH_API_VERSION
+        value: v22.0
+    disks:
+      - name: whatsapp-ai-data
+        mountPath: /var/data
+        sizeGB: 1

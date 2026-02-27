@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard | WhatsApp AI Auto-Reply</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>WhatsApp AI Auto-Reply</h1>
+        <p class="muted"><%= user.email %> (<%= user.role %>)</p>
+      </div>
+      <form action="/logout" method="post">
+        <button type="submit" class="secondary">Logout</button>
+      </form>
+    </header>
+
+    <main class="container">
+      <% if (query.saved === '1') { %>
+      <div class="alert success">Business profile saved.</div>
+      <% } %>
+      <% if (query.admin_saved === '1') { %>
+      <div class="alert success">Plan updated.</div>
+      <% } %>
+      <% if (query.error === 'whatsapp_phone_number_id_in_use') { %>
+      <div class="alert error">This WhatsApp Phone Number ID is already connected to another business.</div>
+      <% } else if (query.error) { %>
+      <div class="alert error">Operation failed. Please try again.</div>
+      <% } %>
+
+      <section class="stats-grid">
+        <article class="stat-card">
+          <h2>Plan</h2>
+          <p class="stat-value"><%= business.plan %></p>
+        </article>
+        <article class="stat-card">
+          <h2>AI Replies Today</h2>
+          <p class="stat-value"><%= dailyReplies %> / <%= business.plan === 'free' ? '30' : 'Unlimited' %></p>
+        </article>
+        <article class="stat-card">
+          <h2>Inbound Today</h2>
+          <p class="stat-value"><%= inboundCount %></p>
+        </article>
+        <article class="stat-card">
+          <h2>Outbound Today</h2>
+          <p class="stat-value"><%= outboundCount %></p>
+        </article>
+      </section>
+
+      <section class="panel">
+        <h2>Business Profile</h2>
+        <p class="muted">AI answers use only this data.</p>
+
+        <form action="/business-profile" method="post" class="profile-form">
+          <label for="name">Business name</label>
+          <input id="name" name="name" type="text" required value="<%= business.name || '' %>" />
+
+          <label for="description">Description</label>
+          <textarea id="description" name="description" rows="3"><%= business.description || '' %></textarea>
+
+          <label for="services">Services + prices</label>
+          <textarea id="services" name="services" rows="4" placeholder="Example: Haircut - $20&#10;Beard trim - $10"><%= business.services || '' %></textarea>
+
+          <label for="working_hours">Working hours</label>
+          <textarea id="working_hours" name="working_hours" rows="2" placeholder="Mon-Fri 9:00-18:00"><%= business.working_hours || '' %></textarea>
+
+          <label for="location">Location</label>
+          <input id="location" name="location" type="text" value="<%= business.location || '' %>" />
+
+          <label for="contact_phone">Contact phone</label>
+          <input id="contact_phone" name="contact_phone" type="text" value="<%= business.contact_phone || '' %>" />
+
+          <h3>WhatsApp Cloud API Connection</h3>
+
+          <label for="whatsapp_phone_number_id">WhatsApp Phone Number ID</label>
+          <input
+            id="whatsapp_phone_number_id"
+            name="whatsapp_phone_number_id"
+            type="text"
+            value="<%= business.whatsapp_phone_number_id || '' %>"
+            placeholder="e.g. 123456789012345"
+          />
+
+          <label for="whatsapp_access_token">WhatsApp Access Token</label>
+          <input
+            id="whatsapp_access_token"
+            name="whatsapp_access_token"
+            type="password"
+            value="<%= business.whatsapp_access_token || '' %>"
+            placeholder="Permanent token from Meta"
+          />
+
+          <button type="submit">Save Profile</button>
+        </form>
+      </section>
+
+      <section class="panel">
+        <h2>Conversations</h2>
+        <% if (!conversations.length) { %>
+        <p class="muted">No conversations yet.</p>
+        <% } else { %>
+        <table>
+          <thead>
+            <tr>
+              <th>Customer</th>
+              <th>Messages</th>
+              <th>Last message</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% conversations.forEach((conversation) => { %>
+            <tr>
+              <td><%= conversation.customer_phone %></td>
+              <td><%= conversation.total_messages %></td>
+              <td><%= conversation.last_message_at %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+        <% } %>
+      </section>
+
+      <section class="panel">
+        <h2>Recent Messages</h2>
+        <% if (!messages.length) { %>
+        <p class="muted">No messages yet.</p>
+        <% } else { %>
+        <table>
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Customer</th>
+              <th>Direction</th>
+              <th>Source</th>
+              <th>Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% messages.forEach((message) => { %>
+            <tr>
+              <td><%= message.created_at %></td>
+              <td><%= message.customer_phone %></td>
+              <td><%= message.direction %></td>
+              <td><%= message.source %></td>
+              <td><%= message.message_text %></td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+        <% } %>
+      </section>
+
+      <% if (user.role === 'admin') { %>
+      <section class="panel">
+        <h2>Admin Manual Billing</h2>
+        <p class="muted">Upgrade/downgrade plans manually. No Stripe/PayPal required.</p>
+
+        <% if (!adminBusinesses.length) { %>
+        <p class="muted">No businesses found.</p>
+        <% } else { %>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Owner Email</th>
+              <th>Business</th>
+              <th>Contact</th>
+              <th>Plan</th>
+              <th>Replies Today</th>
+              <th>Change Plan</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% adminBusinesses.forEach((item) => { %>
+            <tr>
+              <td><%= item.id %></td>
+              <td><%= item.email %></td>
+              <td><%= item.name || '-' %></td>
+              <td><%= item.contact_phone || '-' %></td>
+              <td><span class="plan-badge"><%= item.plan %></span></td>
+              <td><%= item.daily_replies %></td>
+              <td>
+                <form action="/admin/business/<%= item.id %>/plan" method="post" class="inline-form">
+                  <select name="plan" required>
+                    <option value="free" <%= item.plan === 'free' ? 'selected' : '' %>>free</option>
+                    <option value="paid" <%= item.plan === 'paid' ? 'selected' : '' %>>paid</option>
+                  </select>
+                  <button type="submit">Update</button>
+                </form>
+              </td>
+            </tr>
+            <% }) %>
+          </tbody>
+        </table>
+        <% } %>
+      </section>
+      <% } %>
+    </main>
+  </body>
+</html>
