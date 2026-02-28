@@ -21,6 +21,12 @@ const sessionDir = path.resolve(path.dirname(process.env.SESSION_DB_PATH || "./d
 fs.mkdirSync(databaseDir, { recursive: true });
 fs.mkdirSync(sessionDir, { recursive: true });
 
+if (process.env.NODE_ENV === "production") {
+  // Render terminates TLS at the proxy, so Express must trust the first proxy
+  // for secure session cookies to be set correctly.
+  app.set("trust proxy", 1);
+}
+
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "..", "views"));
 
